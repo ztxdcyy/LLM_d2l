@@ -1,5 +1,7 @@
 动手学LLM
 
+Todo顺序：Llama Transformer -> FlashAttention -> llama.cpp -> 量化 
+
 - [ ] llama系列
   - [ ] Transformer
     - [x] MHA
@@ -12,4 +14,12 @@
     - [ ] GQA
   - [ ] llama3.1
     - [ ] 暂时不了解有哪些改进
-  - [ ] 量化
+
+- [ ] FlashAttention
+  - [ ] python
+  - [ ] cpp
+  - [ ] cuda
+
+- [ ] 量化
+
+
