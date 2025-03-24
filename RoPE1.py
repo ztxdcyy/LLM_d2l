@@ -53,6 +53,8 @@ xq_out, xk_out = apply_rotary_emb(xq, xk, freqs_cis)
 print("xq after rotary embedding:", xq_out.shape)
 print("xk after rotary embedding:", xk_out.shape)
 
+
+
 """
 xq.shape = (batch, max_seq_len, num_heads, head_dim)
 after reshape (batch, max_seq_len, num_heads, head_dim // 2, 2)
