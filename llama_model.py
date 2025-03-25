@@ -21,7 +21,7 @@ class ModelArgs:
     dim: int = 4096
     n_layers: int = 32
     n_heads: int = 32
-    n_kv_heads: Optional[int] = None
+    n_kv_heads: Optional[int] = None        # 默认为0，代表默认才用MHA，当n_kv_heads<n_heads时，代表使用GQA
     vocab_size: int = -1  # defined later by tokenizer
     multiple_of: int = 256  # make SwiGLU hidden layer size multiple of large power of 2
     ffn_dim_multiplier: Optional[float] = None
@@ -160,7 +160,7 @@ def apply_rotary_emb(
     xk_out = torch.view_as_real(xk_ * freqs_cis).flatten(3)
     return xq_out.type_as(xq), xk_out.type_as(xk)
 
-
+# GQA导致n_kv_heads < n_heads，因此需要repeat kv head 使得可以做矩阵乘法
 def repeat_kv(x: torch.Tensor, n_rep: int) -> torch.Tensor:
     """torch.repeat_interleave(x, dim=2, repeats=n_rep)"""
     bs, slen, n_kv_heads, head_dim = x.shape
@@ -184,7 +184,7 @@ class Attention(nn.Module):
 
         Attributes:
             n_kv_heads (int): Number of key and value heads.
-            n_local_heads (int): Number of local query heads.
+            n_local_heads (int): Number of local query heads.       # Local代表分布式的情况下，当前GPU分配到的query的头
             n_local_kv_heads (int): Number of local key and value heads.
             n_rep (int): Number of repetitions for local heads.
             head_dim (int): Dimension size of each attention head.
@@ -199,7 +199,7 @@ class Attention(nn.Module):
         super().__init__()
         self.n_kv_heads = args.n_heads if args.n_kv_heads is None else args.n_kv_heads
         model_parallel_size = fs_init.get_model_parallel_world_size()
-        self.n_local_heads = args.n_heads // model_parallel_size
+        self.n_local_heads = args.n_heads // model_parallel_size        # 证明local概念和分布式计算有关
         self.n_local_kv_heads = self.n_kv_heads // model_parallel_size
         self.n_rep = self.n_local_heads // self.n_local_kv_heads
         self.head_dim = args.dim // args.n_heads
@@ -211,11 +211,12 @@ class Attention(nn.Module):
             gather_output=False,
             init_method=lambda x: x,
         )
+        # Tensor Parallel，嵌入矩阵被按列分开放在不同的GPU上并行
         self.wk = ColumnParallelLinear(
             args.dim,
             self.n_kv_heads * self.head_dim,
             bias=False,
-            gather_output=False,
+            gather_output=False,        # 不需要gather结果，继续并行
             init_method=lambda x: x,
         )
         self.wv = ColumnParallelLinear(
@@ -233,6 +234,7 @@ class Attention(nn.Module):
             init_method=lambda x: x,
         )
 
+        # 开辟一块内存空间用于prefill
         self.cache_k = torch.zeros(
             (
                 args.max_batch_size,
@@ -282,9 +284,12 @@ class Attention(nn.Module):
         self.cache_k = self.cache_k.to(xq)
         self.cache_v = self.cache_v.to(xq)
 
+        # 计算新的kv，并且将计算结果保存到cache中
+        # ：bsz意味着不是所有的batch都被使用
         self.cache_k[:bsz, start_pos : start_pos + seqlen] = xk
         self.cache_v[:bsz, start_pos : start_pos + seqlen] = xv
 
+        # 从cache中拿到实际用于计算的kv
         keys = self.cache_k[:bsz, : start_pos + seqlen]
         values = self.cache_v[:bsz, : start_pos + seqlen]
 
@@ -403,6 +408,7 @@ class TransformerBlock(nn.Module):
             torch.Tensor: Output tensor after applying attention and feedforward layers.
 
         """
+        # 对于attn和FFN都是 norm 前置
         h = x + self.attention(
             self.attention_norm(x), start_pos, freqs_cis, mask
         )
