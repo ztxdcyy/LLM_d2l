@@ -5,20 +5,19 @@ Todo顺序：Llama Transformer -> FlashAttention -> llama.cpp -> 量化
 - [ ] llama系列
   - [ ] Transformer
     - [x] MHA
-    - [x] RoPE  （有一个版本的理解，但是不会写，还是不够懂）
-    ![alt text](img/image.png)
+    - [x] RoPE
     - [ ] KVcache
     - [ ] RMSNorm
-  - [ ] llama.cpp
-  - [ ] llama2
     - [ ] GQA
-  - [ ] llama3.1
-    - [ ] 暂时不了解有哪些改进
+    - [x] LayerNorm
+    - [x] BatchNorm
+  - [ ] llama.cpp 【另外一个仓库】
+  - [ ] llama3.1 【不了解】
 
 - [ ] FlashAttention
   - [ ] python
   - [ ] cpp
-  - [ ] cuda
+  - [ ] cuda！！
 
 - [ ] 量化
 
