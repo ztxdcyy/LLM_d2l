@@ -60,6 +60,7 @@ class RMSNorm(torch.nn.Module):
             torch.Tensor: The normalized tensor.
 
         """
+        # 忽略掉减去均值的操作，x*是在分子上，后面的部分是分母，均方根，求均值开根
         return x * torch.rsqrt(x.pow(2).mean(-1, keepdim=True) + self.eps)
 
     def forward(self, x):
