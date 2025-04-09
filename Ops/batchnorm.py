@@ -50,3 +50,5 @@ print(f"\n最大绝对误差: {diff.max().item():.2e}")
 print(f"是否在1e-5误差范围内: {torch.allclose(batch_norm_for_loop(input_tensor), output_tensor, atol=1e-5)}")
 # 使用更严格的1e-6精度验证
 print(f"是否在1e-6误差范围内: {torch.allclose(batch_norm_for_loop(input_tensor), output_tensor, atol=1e-6)}")
+
+
