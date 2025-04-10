@@ -19,14 +19,21 @@ __global__ void matmul_ShareMemory(float *M,float *N,float *P,int width){
     int Row = by * BLOCK_SIZE + ty;
 
     int Pervalue = 0;
-    //有多少个BLOCK_SIZE，每个循环计算一个块的大小
+    //有i个BLOCK_SIZE，每个循环计算一个块的大小
     for(int i = 0;i < width / BLOCK_SIZE;i++){
+        // 加载共享内存：Mds代表共享内存矩阵，M是加载在global内存里的输入矩阵，按行存储，假如一行12元素，index=13则代表第二行第一个元素
+        // Row * width定位到当前行起始位置
+        // i * BLOCK_SIZE确定当前处理的子块列偏移
+        // tx作为子块内的列索引
+        // 同一行的线程(ty相同)会加载连续的内存位置
+        // 并行思想是灵魂！！！tytx时刻记住是32并行（一个block之内）
         Mds[ty][tx] = M[Row * width + (i * BLOCK_SIZE + tx)];
         Nds[ty][tx] = N[Col + (i * BLOCK_SIZE + ty) * width];
         __syncthreads();        // 确保所有线程都完成了共享内存的写入
 
-        //BLOCK_SIZE相乘
+        // 计算子块内矩阵相乘的结果，需要累加才能得到正确答案
         for(int k = 0;k < BLOCK_SIZE;k++)
+            // Mds的k行全部元素乘以Nds的k列的元素，然后累加，得到Pervalue，填写到P矩阵的对应位置
             Pervalue += Mds[ty][k] * Nds[k][tx];
         __syncthreads();
     }
