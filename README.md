@@ -27,7 +27,7 @@ Todo顺序：Llama Transformer -> FlashAttention -> llama.cpp -> 量化
 - [ ] GEMM
   - [x] Cpp
   - [x] CUDA【0409】
-  - [ ] CUDA优化：warp优化（Shared Memory）对比
+  - [x] CUDA优化：warp优化（Shared Memory）对比
   - [ ] TensorRT 及其 Nsight System分析
     - [ ] 真的能自动安排grid/block这些吗？需要设置一个极端不合理的+TensorRT对比分析）
     - [ ] 对比量化前后，时间分析
