@@ -1,5 +1,6 @@
 import numpy as np
 import torch
+import sys
 
 def precompute_freqs_cis(max_seq_len, dim):
     # len(theta) = dim//2
@@ -20,6 +21,11 @@ def reshape_for_broadcast(freqs_cis, x):
     return freqs_cis.view(*shape)
 
 def apply_rotary_emb(xq, xk, freqs_cis):
+    # 确保数据在GPU上
+    xq = xq.cuda()
+    xk = xk.cuda()
+    freqs_cis = freqs_cis.cuda()
+    
     # xq.shape = (batch, max_seq_len, num_heads, head_dim)
     # xq after reshape = (batch, max_seq_len, num_heads, head_dim//2, 2)
     # xq_.shape = (batch, max_seq_len, num_heads, head_dim//2)
@@ -30,29 +36,36 @@ def apply_rotary_emb(xq, xk, freqs_cis):
     # 逐元素相乘的时候shape不变
     # view_as_real:（batch, max_seq_len, num_heads, head_dim//2） -> (batch, max_seq_len, num_heads, head_dim//2, 2)
     # flatten(3)： (batch, max_seq_len, num_heads, head_dim//2, 2) -> (batch, max_seq_len, num_heads, head_dim)
-    xq_out = torch.view_as_real(xq_ * freqs_cis).flatten(3)
-    xk_out = torch.view_as_real(xk_ * freqs_cis).flatten(3)
-    return xq_out.type_as(xq), xk_out.type_as(xk)
+    start_time = time.time()
+    # 使用CUDA加速计算
+    with torch.cuda.amp.autocast():
+        xq_out = torch.view_as_real(xq_ * freqs_cis).flatten(3)
+        xk_out = torch.view_as_real(xk_ * freqs_cis).flatten(3)
+    torch.cuda.synchronize()  # 确保CUDA操作完成
+    elapsed = time.time() - start_time
+    
+    return xq_out.type_as(xq), xk_out.type_as(xk), elapsed
 
 
-# 示例数据
-batch = 3
-max_seq_len = 512
-dim = 768
-num_heads = 8
-head_dim = dim // num_heads
-xq = torch.randn(batch, max_seq_len, num_heads, head_dim)
-xk = torch.randn(batch, max_seq_len, num_heads, head_dim)
-
-# 获取频率张量
-freqs_cis = precompute_freqs_cis(max_seq_len, head_dim)
-
-# 应用旋转位置编码
-xq_out, xk_out = apply_rotary_emb(xq, xk, freqs_cis)
-
-print("xq after rotary embedding:", xq_out.shape)
-print("xk after rotary embedding:", xk_out.shape)
-
+if __name__ == "__main__":
+    import sys
+    import time
+    
+    if len(sys.argv) != 5:
+        print("用法: python RoPE1.py batch_size seq_len num_heads head_dim")
+        sys.exit(1)
+        
+    batch = int(sys.argv[1])
+    max_seq_len = int(sys.argv[2])
+    num_heads = int(sys.argv[3])
+    head_dim = int(sys.argv[4])
+    
+    xq = torch.randn(batch, max_seq_len, num_heads, head_dim)
+    xk = torch.randn(batch, max_seq_len, num_heads, head_dim)
+    freqs_cis = precompute_freqs_cis(max_seq_len, head_dim)
+    
+    xq_out, xk_out, elapsed = apply_rotary_emb(xq, xk, freqs_cis)
+    print(elapsed)  
 
 
 """
@@ -68,4 +81,13 @@ xq_ * freqs_cis：* 代表 per element 相乘，需要经过broadcast
 
 after view as real (batch, max_seq_len, num_heads, head_dim//2, 2) 添加上最后一个2
 after flatten (batch, max_seq_len, num_heads, head_dim) 
+"""
+
+
+"""
+设复数形式：q_complex = q_real + i*q_imag
+旋转操作：q_rotated = q_complex * (cosθ + i*sinθ)
+展开实数形式：
+q_real' = q_real*cosθ - q_imag*sinθ
+q_imag' = q_real*sinθ + q_imag*cosθ
 """
