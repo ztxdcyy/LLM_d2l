@@ -8,7 +8,7 @@ BATCH_SIZE=3
 NUM_HEADS=16
 HEAD_DIM=128
 NUM_RUNS=10
-SEQ_LEN_LIST=(1024 2048 4096)
+SEQ_LEN_LIST=(256 512 1024)
 
 for SEQ_LEN in "${SEQ_LEN_LIST[@]}"; do
     echo "测试序列长度: $SEQ_LEN"
@@ -37,7 +37,7 @@ for SEQ_LEN in "${SEQ_LEN_LIST[@]}"; do
     # 性能对比结果
     echo "-----------------------------"
     echo "性能对比结果(seq_len=$SEQ_LEN):"
-    speedup=$(echo "scale=2; $rope2_avg/$rope1_avg" | bc)
+    speedup=$(awk -v r2="$rope2_avg" -v r1="$rope1_avg" 'BEGIN {printf "%.2f", r2/r1}')
     echo "RoPE1 相对于 RoPE2 的加速比: ${speedup}x"
     echo "================================="
 done

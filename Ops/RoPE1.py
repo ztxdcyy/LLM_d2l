@@ -38,7 +38,7 @@ def apply_rotary_emb(xq, xk, freqs_cis):
     # flatten(3)： (batch, max_seq_len, num_heads, head_dim//2, 2) -> (batch, max_seq_len, num_heads, head_dim)
     start_time = time.time()
     # 使用CUDA加速计算
-    with torch.cuda.amp.autocast():
+    with torch.amp.autocast(device_type='cuda'):
         xq_out = torch.view_as_real(xq_ * freqs_cis).flatten(3)
         xk_out = torch.view_as_real(xk_ * freqs_cis).flatten(3)
     torch.cuda.synchronize()  # 确保CUDA操作完成

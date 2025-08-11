@@ -31,7 +31,7 @@ def RoPE(xq, xk):
     cos = cos.unsqueeze(0).unsqueeze(0)  # [1, 1, seq_len, head_dim//2]
     sin = sin.unsqueeze(0).unsqueeze(0)  # [1, 1, seq_len, head_dim//2]
 
-    with torch.cuda.amp.autocast():
+    with torch.amp.autocast(device_type='cuda'):
         # 计算q的旋转
         xq_rot = torch.stack([-xq[..., 1::2], xq[..., ::2]], dim=-1).reshape(batch, num_heads, seq_len, head_dim)
         # start_time = time.time()
