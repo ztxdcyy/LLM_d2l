@@ -32,20 +32,22 @@ class MoELayer(nn.Module):
         # 2. 初始化输出
         output = torch.zeros_like(x)  # [B, S, d_model]
         
-        # 3. 对每个选中的专家计算输出
-        for k in range(self.top_k):
-            expert_ids = top_k_indices[:, :, k]  # [B, S] - 第k个专家的ID
-            expert_weights = top_k_gates[:, :, k].unsqueeze(-1)  # [B, S, 1] - 第k个专家的权重
-            
-            # 对每个专家批量处理
-            for expert_id in range(self.num_experts):
-                mask = (expert_ids == expert_id)  # [B, S] - 哪些位置选择了这个专家
-                if mask.any():          # 假如mask中有true的话
-                    expert_input = x[mask]  # 提取选择该专家的token
-                    print(f"专家{expert_id}: mask.sum()={mask.sum()}, expert_input.shape={expert_input.shape}")
-                    print(f"mask位置: {torch.where(mask)}") 
-                    expert_output = self.experts[expert_id](expert_input)  # 专家处理
-                    output[mask] += expert_weights[mask] * expert_output  # 加权累加
+        # 3. 逐个token处理
+        for b in range(x.shape[0]):                             # 遍历batch
+            for s in range(x.shape[1]):                         # 遍历sequence
+                token_input = x[b, s, :]                        # [d_model]       当前token
+                token_output = torch.zeros_like(token_input)    # [d_model]
+                
+                # 处理该token选中的top_k个专家
+                for k in range(self.top_k):
+                    expert_id = top_k_indices[b, s, k].item()   # 第k个选中的专家
+                    weight = top_k_gates[b, s, k]               # 该专家的输出加权系数
+                    
+                    # 专家处理并加权累加
+                    expert_out = self.experts[expert_id](token_input.unsqueeze(0))  # [1, d_model]
+                    token_output += weight * expert_out.squeeze(0)                  # 加权累加
+                
+                output[b, s, :] = token_output
         
         return output
 
