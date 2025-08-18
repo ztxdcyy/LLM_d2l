@@ -118,10 +118,10 @@ int main(int argc, char* argv[]) {
         checkCudaError(cudaMemcpy(d_B, h_B, matrixSize, cudaMemcpyHostToDevice), "Failed to copy B");
 
         // 配置CUDA核函数，按照blocksize划分grid，使得整个输入矩阵width都能被per element的分配到内存上。
-        // dim3 block(blockSize, blockSize);
-        // dim3 grid((width + block.x - 1) / block.x, (width + block.y - 1) / block.y);
-        dim3 block(64, 64);
-        dim3 grid((width + 63) / 64, (width + 63) / 64);
+        dim3 block(blockSize, blockSize);
+        dim3 grid((width + block.x - 1) / block.x, (width + block.y - 1) / block.y);
+        // dim3 block(64, 64);
+        // dim3 grid((width + 63) / 64, (width + 63) / 64);
 
         std::cout << "Matrix " << width << "x" << width 
                   << " - Grid: " << grid.x << "x" << grid.y 

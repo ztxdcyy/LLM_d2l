@@ -110,3 +110,50 @@ Maximum square blocksize for this device: 32
 
 All tests completed!
 ```
+
+```
+=== GEMM Shared Memory Configuration ===
+GEMM参数设置: BM=128, BN=128, BK=8
+Using optimized block size: 32x32 (1024 threads per block)
+=========================================
+
+Matrix 512x512 - Grid: 4x4 blocks, Block: 32x32 threads
+Matrix multiplication (512x512) * (512x512) completed in: 0.000271218 seconds
+Performance: 989.741 GFLOPS
+
+Matrix 1024x1024 - Grid: 8x8 blocks, Block: 32x32 threads
+Matrix multiplication (1024x1024) * (1024x1024) completed in: 0.000338969 seconds
+Performance: 6335.34 GFLOPS
+
+Matrix 2048x2048 - Grid: 16x16 blocks, Block: 32x32 threads
+Matrix multiplication (2048x2048) * (2048x2048) completed in: 0.00135579 seconds
+Performance: 12671.5 GFLOPS
+
+Matrix 4096x4096 - Grid: 32x32 blocks, Block: 32x32 threads
+Matrix multiplication (4096x4096) * (4096x4096) completed in: 0.0114455 seconds
+Performance: 12008.2 GFLOPS
+```
+
+
+```
+=== GEMM Shared Memory Configuration ===
+GEMM参数设置: BM=128, BN=128, BK=8
+Using optimized block size: 16x16 (256 threads per block)
+=========================================
+
+Matrix 512x512 - Grid: 4x4 blocks, Block: 16x16 threads
+Matrix multiplication (512x512) * (512x512) completed in: 0.000393056 seconds
+Performance: 682.945 GFLOPS
+
+Matrix 1024x1024 - Grid: 8x8 blocks, Block: 16x16 threads
+Matrix multiplication (1024x1024) * (1024x1024) completed in: 0.000582541 seconds
+Performance: 3686.41 GFLOPS
+
+Matrix 2048x2048 - Grid: 16x16 blocks, Block: 16x16 threads
+Matrix multiplication (2048x2048) * (2048x2048) completed in: 0.00119223 seconds
+Performance: 14409.8 GFLOPS
+
+Matrix 4096x4096 - Grid: 32x32 blocks, Block: 16x16 threads
+Matrix multiplication (4096x4096) * (4096x4096) completed in: 0.00565646 seconds
+Performance: 24297.7 GFLOPS
+```
