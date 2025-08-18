@@ -4,40 +4,59 @@
 #include <ctime>
 #include <chrono>
 #include <cuda_runtime.h>
-#define BLOCK_SIZE 32
+// GEMM分块参数设置，按照标准GEMM优化参数
+#define BM 128  // A矩阵的行分块大小
+#define BN 128  // B矩阵的列分块大小
+#define BK 8    // K维度的分块大小
 
-__global__ void matmul_ShareMemory(float *M,float *N,float *P,int width){
-    __shared__ float Mds[BLOCK_SIZE][BLOCK_SIZE];
-    __shared__ float Nds[BLOCK_SIZE][BLOCK_SIZE];
-
-    int bx = blockIdx.x;
-    int by = blockIdx.y;
-    int tx = threadIdx.x;
-    int ty = threadIdx.y;
-
-    int Col = bx * BLOCK_SIZE + tx;
-    int Row = by * BLOCK_SIZE + ty;
-
-    int Pervalue = 0;
-    //有i个BLOCK_SIZE，每个循环计算一个块的大小
-    for(int i = 0;i < width / BLOCK_SIZE;i++){
-        // 加载共享内存：Mds代表共享内存矩阵，M是加载在global内存里的输入矩阵，按行存储，假如一行12元素，index=13则代表第二行第一个元素
-        // Row * width定位到当前行起始位置
-        // i * BLOCK_SIZE确定当前处理的子块列偏移
-        // tx作为子块内的列索引
-        // 同一行的线程(ty相同)会加载连续的内存位置
-        // 并行思想是灵魂！！！tytx时刻记住是32并行（一个block之内）
-        Mds[ty][tx] = M[Row * width + (i * BLOCK_SIZE + tx)];
-        Nds[ty][tx] = N[Col + (i * BLOCK_SIZE + ty) * width];
-        __syncthreads();        // 确保所有线程都完成了共享内存的写入
-
-        // 计算子块内矩阵相乘的结果，需要累加才能得到正确答案
-        for(int k = 0;k < BLOCK_SIZE;k++)
-            // Mds的k行全部元素乘以Nds的k列的元素，然后累加，得到Pervalue，填写到P矩阵的对应位置
-            Pervalue += Mds[ty][k] * Nds[k][tx];
-        __syncthreads();
+__global__ void matmul_ShareMemory(float *A, float *B, float *C, int M, int N, int K){
+    // 共享内存：存储A和B的子块
+    __shared__ float As[BM][BK];
+    __shared__ float Bs[BK][BN];
+    
+    // 线程块和线程索引
+    int bx = blockIdx.x;  // B矩阵的列块索引
+    int by = blockIdx.y;  // A矩阵的行块索引
+    int tx = threadIdx.x; // 线程在块内的列索引
+    int ty = threadIdx.y; // 线程在块内的行索引
+    
+    // 计算线程负责的全局位置
+    int globalRow = by * BM + ty;
+    int globalCol = bx * BN + tx;
+    
+    // 累加结果
+    float Cvalue = 0.0f;
+    
+    // 分块计算：遍历K维度
+    for(int bk = 0; bk < (K + BK - 1) / BK; bk++){
+        // 加载A矩阵子块到共享内存 (每个线程加载一个元素)
+        if(ty < BM && tx < BK && globalRow < M && bk * BK + tx < K){
+            As[ty][tx] = A[globalRow * K + bk * BK + tx];
+        } else {
+            As[ty][tx] = 0.0f;
+        }
+        
+        // 加载B矩阵子块到共享内存 (每个线程加载一个元素)
+        if(ty < BK && tx < BN && bk * BK + ty < K && globalCol < N){
+            Bs[ty][tx] = B[(bk * BK + ty) * N + globalCol];
+        } else {
+            Bs[ty][tx] = 0.0f;
+        }
+        
+        __syncthreads(); // 确保所有线程完成共享内存加载
+        
+        // 计算当前子块的矩阵乘法
+        for(int k = 0; k < BK; k++){
+            Cvalue += As[ty][k] * Bs[k][tx];
+        }
+        
+        __syncthreads(); // 确保计算完成后再进行下一轮
     }
-    P[Row * width + Col] = Pervalue;
+    
+    // 将结果写回全局内存
+    if(globalRow < M && globalCol < N){
+        C[globalRow * N + globalCol] = Cvalue;
+    }
 }
 
 // 检查CUDA错误
@@ -50,7 +69,6 @@ void checkCudaError(cudaError_t err, const char *msg) {
 
 int main() {
     const int sizes[] = {512, 1024, 2048, 4096};
-    // const int blockSize = 32;               // 为了满足研究warp的性质，设置blocksize为32，因为warp的定义是32个内存连续的线程，统一定义为一个事件，接受指令transaction，而不是一个线程一个事件，这样可以减少指令的数量，提高效率。
 
     cudaDeviceProp prop;
     cudaGetDeviceProperties(&prop, 0);

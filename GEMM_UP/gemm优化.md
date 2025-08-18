@@ -4,7 +4,7 @@
 3. **优化思路**：让一个 block 内的 thread 先从 Global Memory 中读取子矩阵块数据（大小为 BLOCK_SIZE × BLOCK_SIZE）并写入 Shared Memory 中；在计算时，从 Shared Memory 中（重复）读取数据做乘累加，从而避免每次都到 Global 中取数据带来的高延迟影响。接下来让子矩阵块分别在矩阵 A 的行向以及矩阵 B 的列向上滑动，直到计算完所有 width 个元素的乘累加。
 
 就是tiling读取blocksize的子矩阵到sharedmem中，利用sharedmem低延时、高带宽的特性。
-![Alt text](image-2.png)
+![Alt text](img/image-2.png)
 
 ```
 cd /GEMM_UP
@@ -13,16 +13,39 @@ cd /GEMM_UP
 
 效果：
 
-![Alt text](image-3.png)
+![Alt text](img/image-3.png)
 
 Nsight System Timeline 分析结果：
 
-![Alt text](image.png)
+![Alt text](img/image.png)
 
 - [ ] TensotRT优化对比，据说能：
-![Alt text](image-1.png)
+![Alt text](img/image-1.png)
 
 来自于：https://help.aliyun.com/zh/ack/cloud-native-ai-suite/use-cases/using-nsight-system-to-realize-performance-analysis#cf8415010a2vi
 
 - [ ] 需要NVTX观测batch加载？
 
+# 硬件参数
+1. maxThreadsPerBlock = 1024
+
+表示一个线程块中线程总数的上限
+这是所有维度线程数的乘积限制
+
+2. Max block dimensions: 1024 x 1024 x 64
+
+表示每个维度上线程数的独立上限
+x 维度最多 1024 个线程
+y 维度最多 1024 个线程
+z 维度最多 64 个线程
+
+可以验证一下，当我们设置block为（64，64）的时候会触发cudacheck：Kernel execution failed: invalid configuration argument
+
+这样超出block restrict 的configuration会被调度器拒绝
+
+3. FLOPs
+https://viperatech.com/product/nvidia-hgx-h20/
+
+With 96 GB of HBM3 memory and a 4.0 TB/s memory bandwidth, this GPU delivers unparalleled performance in AI applications. Diverse Tensor Cores, including INT8, FPB, BF16, and FP16, contribute to up to 296 TFLOPS, complemented by an additional 74 TFLOPS from the TF32 Tensor Core. 
+
+我们这款H20是140GBHBM的，算力296TFLOPs，TF32core还能额外带来74TFLOPs
