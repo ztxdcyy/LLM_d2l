@@ -32,7 +32,7 @@ __global__ void matmul_ShareMemory(float *A, float *B, float *C, int M, int N, i
     float Cvalue = 0.0f;
     
     // 分块计算：遍历K维度
-    for(int bk = 0; bk < (K + BK - 1) / BK; bk++){
+    for(int bk = 0; bk < K / BK; bk++){
         // 加载A矩阵子块到共享内存
         // 每个线程负责加载多个元素以填满共享内存
         for(int loadRow = ty; loadRow < BM; loadRow += blockDim.y){
@@ -101,24 +101,6 @@ int main() {
     std::cout << "Total global memory: " << prop.totalGlobalMem / (1024*1024) << " MB" << std::endl;
     std::cout << "Multiprocessor count: " << prop.multiProcessorCount << std::endl;
     std::cout << "Max threads per block: " << prop.maxThreadsPerBlock << std::endl;
-    std::cout << "Max grid size: "
-              << prop.maxGridSize[0] << " x "
-              << prop.maxGridSize[1] << " x "
-              << prop.maxGridSize[2] << std::endl;
-    std::cout << "Max block dimensions: "
-              << prop.maxThreadsDim[0] << " x "
-              << prop.maxThreadsDim[1] << " x "
-              << prop.maxThreadsDim[2] << std::endl;
-    std::cout << "===============================" << std::endl;
-    std::cout << std::endl;
-    
-    std::cout << "=== GEMM Shared Memory Configuration ===" << std::endl;
-    std::cout << "GEMM参数设置: BM=" << BM << ", BN=" << BN << ", BK=" << BK << std::endl;
-    std::cout << "线程参数设置: RM=" << RM << ", RN=" << RN << std::endl;
-    std::cout << "Using optimized block size: " << BN/RN << "x" << BM/RM
-              << " (" << (BN/RN) * (BM/RM) << " threads per block)" << std::endl;
-    std::cout << "每个线程负责计算: " << RM << "x" << RN << " = " << RM*RN << " 个输出元素" << std::endl;
-    std::cout << "=========================================" << std::endl;
     std::cout << std::endl;
 
     for (int width : sizes) {
@@ -154,7 +136,7 @@ int main() {
         // 线程块大小：根据BM/RM和BN/RN计算
         dim3 block(BN/RN, BM/RM);  // (128/8, 128/8) = (16, 16)
         // 网格大小：按照BM和BN分块大小计算
-        dim3 grid((N + BN - 1) / BN, (M + BM - 1) / BM);
+        dim3 grid(N / BN, M / BM);
         
         std::cout << "Matrix " << M << "x" << N
                   << " - Grid: " << grid.x << "x" << grid.y
