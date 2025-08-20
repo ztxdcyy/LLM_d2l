@@ -1,3 +1,13 @@
 {
-    "marscode.chatLanguage": "cn"
+    "marscode.chatLanguage": "cn",
+    "files.associations": {
+        "__split_buffer": "cpp",
+        "bitset": "cpp",
+        "deque": "cpp",
+        "forward_list": "cpp",
+        "iterator": "cpp",
+        "memory": "cpp",
+        "vector": "cpp",
+        "complex": "cpp"
+    }
 }
