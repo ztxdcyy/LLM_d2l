@@ -1,36 +1,31 @@
-#!/bin/bash
+=== GEMM共享内存版本编译和运行脚本 ===
+项目根目录: /root/LLM_d2l/GEMM_UP
 
-echo "=== GEMM共享内存版本编译和运行脚本 ==="
-echo "项目根目录: $(pwd)"
-echo ""
+=== 开始编译 ===
+✅ 编译成功!
 
-echo "=== 开始编译 ==="
-# 编译程序，使用sm_90架构
-NVCC_FLAGS="-O3 -arch=sm_90 -std=c++11"
-nvcc $NVCC_FLAGS -o bin/02_gemm_sharedmem src/02_gemm_sharedmem.cu
+=== 开始运行 ===
+执行文件: /root/LLM_d2l/GEMM_UP/bin/02_gemm_sharedmem
 
-if [ $? -ne 0 ]; then
-    echo "❌ 编译失败!"
-    exit 1
-fi
+=== GPU Device Information ===
+Device name: NVIDIA GeForce RTX 4090
+Compute capability: 8.9
+Total global memory: 24091 MB
+Multiprocessor count: 128
+Max threads per block: 1024
 
-echo "✅ 编译成功!"
-echo ""
+Matrix 512x512 - Grid: 4x4 blocks, Block: 16x16 threads
+Matrix multiplication (512x512) * (512x512) completed in: 0.000263974 seconds
+Performance: 1016.9 GFLOPS
 
-echo "=== 开始运行 ==="
-echo "执行文件: $(pwd)/bin/02_gemm_sharedmem"
-echo ""
+Matrix 1024x1024 - Grid: 8x8 blocks, Block: 16x16 threads
+Matrix multiplication (1024x1024) * (1024x1024) completed in: 0.000384034 seconds
+Performance: 5591.91 GFLOPS
 
-# 运行程序
-./bin/02_gemm_sharedmem
+Matrix 2048x2048 - Grid: 16x16 blocks, Block: 16x16 threads
+Matrix multiplication (2048x2048) * (2048x2048) completed in: 0.000746187 seconds
+Performance: 23023.5 GFLOPS
 
-if [ $? -eq 0 ]; then
-    echo ""
-    echo "✅ 程序运行完成!"
-else
-    echo ""
-    echo "❌ 程序运行失败!"
-fi
-
-echo ""
-echo "=== 脚本执行完成 ==="
+Matrix 4096x4096 - Grid: 32x32 blocks, Block: 16x16 threads
+Matrix multiplication (4096x4096) * (4096x4096) completed in: 0.00452767 seconds
+Performance: 30355.4 GFLOPS
