@@ -1,4 +1,3 @@
-//核函数的具体实现 - 共享内存优化版本
 #include <iostream>
 #include <cstdlib>
 #include <ctime>
@@ -28,6 +27,8 @@ __global__ void matmul_ShareMemory(float *A, float *B, float *C, int M, int N, i
     int tx = threadIdx.x;               // thread在block内的列索引
     int ty = threadIdx.y;               // thread在block内的行索引 
     int tid = ty * blockDim.x + tx;     // 计算线程在block内的全局索引
+    int globalRow = OFFSET(by, ty, BM);
+    int globalCol = OFFSET(bx, tx, BN);
     
     // 这里仍然使用累加结果，只优化float4加载，对比下能提升多少
     float Cvalue = 0.0f;
@@ -53,20 +54,19 @@ __global__ void matmul_ShareMemory(float *A, float *B, float *C, int M, int N, i
         // 在循环外计算出了a的全局行，在循环内计算出了a的全局列，因此得到a在全局一维矩阵中的真正index
         int load_a_gmem_addr = OFFSET(load_a_gmem_m, load_a_gmem_k, K);         
         // 使用FLOAT4指令加载A tile 到共享内存，同时静态指定thread加载的地址，避开循环
-        FLOAT4(s_a[load_a_smem_m][load_a_smem_k]) = FLOAT4(a[load_a_gmem_addr]);  
+        FLOAT4(s_a[load_a_smem_m][load_a_smem_k]) = FLOAT4(A[load_a_gmem_addr]);  
         // 同理
         int load_b_gmem_k = OFFSET(bk, load_b_smem_k, BK);
         int load_b_gmem_addr = OFFSET(load_b_gmem_k, load_b_gmem_n, N);
         // load B tile 
-        FLOAT4(Bs[load_b_smem_k][load_b_smem_n]) = FLOAT4(b[load_b_gmem_addr]);  
-        }
+        FLOAT4(s_b[load_b_smem_k][load_b_smem_n]) = FLOAT4(B[load_b_gmem_addr]);  
 
         __syncthreads();            // 同步，确保所有线程都加载完了自己的任务，我们的smem加载是完整的
         
         // 计算当前子块的矩阵乘法
         if(ty < BM && tx < BN){
             for(int k = 0; k < BK; k++){
-                Cvalue += As[ty][k] * Bs[k][tx];
+                Cvalue += s_a[ty][k] * s_b[k][tx];
             }
         }
         
@@ -135,7 +135,7 @@ int main() {
 
         // 配置CUDA核函数
         // 线程块大小：根据BM/RM和BN/RN计算
-        dim3 block(BN/RN, BM/RM);  // (128/8, 128/8) = (16, 16)
+        dim3 block(BN/TN, BM/TM);  // (128/8, 128/8) = (16, 16)
         // 网格大小：按照BM和BN分块大小计算
         dim3 grid(N / BN, M / BM);
         

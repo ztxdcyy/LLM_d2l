@@ -1,5 +1,7 @@
 各个版本在4090上的对比（离开了H20……）
 
+我们统一观测：MNK=4096，BM=BK=128, TM=TN=8, dim3 block(BM/TM, BK/TK)
+
 sgemm_v123来自于紫气东来
 
 （https://www.zhihu.com/people/zi-qi-dong-lai-1）
@@ -8,7 +10,7 @@ sgemm_v123来自于紫气东来
 
 
 # 数据记录
-## 01 
+## 01 5089.96 GFLOPS（100%）
 ```
 root@autodl-container-3f7446bd49-385cc1ca:~/LLM_d2l/GEMM_UP# ./utils/01.sh 
 Compiling src/01_gemm_blocksize.cu...
@@ -104,7 +106,7 @@ Maximum square blocksize for this device: 32
 All tests completed!
 ```
 
-## 02 
+## 02 30355.4 GFLOPS（5.9637）
 
 4090 需要在utils02sh里把sm改成89 
 
@@ -142,9 +144,40 @@ Matrix multiplication (4096x4096) * (4096x4096) completed in: 0.00452767 seconds
 Performance: 30355.4 GFLOPS
 ```
 
-## 03
+## 03 121502 GFLOPS （23.87091）
 ```
+root@autodl-container-3f7446bd49-385cc1ca:~/LLM_d2l/GEMM_UP# ./utils/03.sh 
+=== GEMM共享内存版本编译和运行脚本 ===
+项目根目录: /root/LLM_d2l/GEMM_UP
 
+=== 开始编译 ===
+=== 开始运行 ===
+执行文件: /root/LLM_d2l/GEMM_UP/bin/03
+
+=== GPU Device Information ===
+Device name: NVIDIA GeForce RTX 4090
+Compute capability: 8.9
+Total global memory: 24091 MB
+Multiprocessor count: 128
+Max threads per block: 1024
+
+Matrix 512x512 - Grid: 4x4 blocks, Block: 16x16 threads
+Matrix multiplication (512x512) * (512x512) completed in: 0.000116361 seconds
+Performance: 2306.92 GFLOPS
+
+Matrix 1024x1024 - Grid: 8x8 blocks, Block: 16x16 threads
+Matrix multiplication (1024x1024) * (1024x1024) completed in: 8.0301e-05 seconds
+Performance: 26742.9 GFLOPS
+
+Matrix 2048x2048 - Grid: 16x16 blocks, Block: 16x16 threads
+Matrix multiplication (2048x2048) * (2048x2048) completed in: 0.000184432 seconds
+Performance: 93150.2 GFLOPS
+
+Matrix 4096x4096 - Grid: 32x32 blocks, Block: 16x16 threads
+Matrix multiplication (4096x4096) * (4096x4096) completed in: 0.00113117 seconds
+Performance: 121502 GFLOPS
+
+=== 脚本执行完成 ===
 ```
 
 sgemm v1
