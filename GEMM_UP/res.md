@@ -8,7 +8,9 @@ sgemm_v123来自于紫气东来
 
 （https://github.com/ifromeast/cuda_learning/blob/main/03_gemm/）
 
-c，开始慌了，咋都突破硬件上线了，太抽象了，等会验证下正确性。
+c，开始慌了，咋都突破硬件上限了，太抽象了，等会验证下正确性。
+
+4090查得到的数据FP32 (float) 82.58 TFLOPS 我那个不知道咋回事都120多TFLOPs了，抽象。
 
 
 # 数据记录
