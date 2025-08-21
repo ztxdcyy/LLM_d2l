@@ -8,7 +8,7 @@ Todo顺序：Llama Transformer -> FlashAttention -> llama.cpp -> 量化
     - [x] RoPE
       - [x] 1. llama方式实现
       - [x] 2. 线性组合方式实现
-      - [x] 1 vs 2 ：1比2快3.8倍左右（1023，2048，4096）平均测速。原因可能在于1通过复数乘法规避掉了2的transpose，stack，reshape这些pytorch优化的不好的，很难利用上并行特性的算子。
+      - [x] 1 vs 2 ：1比2快3.8倍左右（1023，2048，4096）平均测速。原因可能在于1通过复数乘法规避掉了2的transpose，stack，reshape这些中间过程，同时也避免了中间tensor的创建。
     - [ ] KVcache
     - [x] RMSNorm
     - [x] GQA
