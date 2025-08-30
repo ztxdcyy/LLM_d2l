@@ -2,6 +2,8 @@
 # Todo List
 Todo顺序：Llama Transformer -> FlashAttention -> llama.cpp -> 量化 
 
+把优化的gemm和pytorch实现对比一下性能？以及融合进框架里，看看能加速多少？
+
 - [ ] llama系列
   - [ ] Transformer
     - [x] MHA
