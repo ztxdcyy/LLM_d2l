@@ -3,6 +3,7 @@
 #include <ctime>
 #include <chrono>
 #include <cmath>
+#include <vector>
 #include <cuda_runtime.h>
 
 // shared mem tile size
@@ -79,6 +80,29 @@ __global__ void matmul_ShareMemory(float *A, float *B, float *C, int M, int N, i
     }
 }
 
+// 采样若干元素做轻量正确性校验（从v2版本迁移）
+double sample_max_abs_error(const float* A,
+                            const float* B,
+                            const float* C,
+                            int M, int N, int K) {
+    const int samples = 8;
+    double max_err = 0.0;
+    int coords[samples][2] = {
+        {0,0}, {M/7,N/5}, {M/3,N/4}, {M/2,N/2}, {M-1,N-1}, {M/5,N/7}, {M/9,N/11}, {M/13,N/3}
+    };
+    for (int s = 0; s < samples; ++s) {
+        int m = std::min(std::max(coords[s][0], 0), M-1);
+        int n = std::min(std::max(coords[s][1], 0), N-1);
+        double ref = 0.0;
+        for (int k = 0; k < K; ++k) {
+            ref += static_cast<double>(A[OFFSET(m,k,K)]) * static_cast<double>(B[OFFSET(k,n,N)]);
+        }
+        double err = std::fabs(static_cast<double>(C[OFFSET(m,n,N)]) - ref);
+        if (err > max_err) max_err = err;
+    }
+    return max_err;
+}
+
 // 检查CUDA错误
 void checkCudaError(cudaError_t err, const char *msg) {
     if (err != cudaSuccess) {
@@ -142,6 +166,15 @@ int main() {
         std::cout << "Matrix " << M << "x" << N
                   << " - Grid: " << grid.x << "x" << grid.y
                   << " blocks, Block: " << block.x << "x" << block.y << " threads" << std::endl;
+
+        // 预热一次并做轻量正确性校验（从v2版本添加）
+        matmul_ShareMemory<<<grid, block>>>(d_A, d_B, d_C, M, N, K);
+        checkCudaError(cudaGetLastError(), "Kernel launch (warmup)");
+        checkCudaError(cudaDeviceSynchronize(), "Kernel sync (warmup)");
+
+        checkCudaError(cudaMemcpy(h_C, d_C, sizeC, cudaMemcpyDeviceToHost), "Failed to copy C");
+        double max_err = sample_max_abs_error(h_A, h_B, h_C, M, N, K);
+        std::cout << "Sampled max abs error: " << max_err << std::endl;
 
         // 执行并计时
         auto start = std::chrono::high_resolution_clock::now();

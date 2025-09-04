@@ -149,6 +149,9 @@ Performance: 30355.4 GFLOPS
 ```
 
 ## 03 121502 GFLOPS （23.87091）
+
+这个版本有问题，性能突破了物理上限，计算结果也是错的离谱。
+
 ```
 root@autodl-container-3f7446bd49-385cc1ca:~/LLM_d2l/GEMM_UP# ./utils/03.sh 
 === GEMM共享内存版本编译和运行脚本 ===
@@ -184,7 +187,85 @@ Performance: 121502 GFLOPS
 === 脚本执行完成 ===
 ```
 
-sgemm v1
+```
+(base) root@autodl-container-10be4ca793-400c39a3:~/workspace/LLM_d2l/GEMM_UP# ./utils/03.sh 
+=== GEMM共享内存版本编译和运行脚本 ===
+项目根目录: /root/workspace/LLM_d2l/GEMM_UP
+
+=== 开始编译 ===
+=== 开始运行 ===
+执行文件: /root/workspace/LLM_d2l/GEMM_UP/bin/03
+
+=== GPU Device Information ===
+Device name: NVIDIA GeForce RTX 4090
+Compute capability: 8.9
+Total global memory: 24091 MB
+Multiprocessor count: 128
+Max threads per block: 1024
+
+Matrix 512x512 - Grid: 4x4 blocks, Block: 16x16 threads
+Sampled max abs error: 131.09
+Matrix multiplication (512x512) * (512x512) completed in: 3.2325e-05 seconds
+Performance: 8304.27 GFLOPS
+
+Matrix 1024x1024 - Grid: 8x8 blocks, Block: 16x16 threads
+Sampled max abs error: 265.641
+Matrix multiplication (1024x1024) * (1024x1024) completed in: 5.6046e-05 seconds
+Performance: 38316.4 GFLOPS
+
+Matrix 2048x2048 - Grid: 16x16 blocks, Block: 16x16 threads
+Sampled max abs error: 533.071
+Matrix multiplication (2048x2048) * (2048x2048) completed in: 0.000163538 seconds
+Performance: 105051 GFLOPS
+
+Matrix 4096x4096 - Grid: 32x32 blocks, Block: 16x16 threads
+Sampled max abs error: 1044.09
+Matrix multiplication (4096x4096) * (4096x4096) completed in: 0.00111716 seconds
+Performance: 123025 GFLOPS
+
+
+=== 脚本执行完成 ===
+```
+
+## 03 v2
+
+```
+(base) root@autodl-container-10be4ca793-400c39a3:~/workspace/LLM_d2l/GEMM_UP# ./utils/03v2.sh 
+=== GEMM共享内存版本编译和运行脚本 ===
+项目根目录: /root/workspace/LLM_d2l/GEMM_UP
+
+=== 开始编译 ===
+=== 开始运行 ===
+执行文件: /root/workspace/LLM_d2l/GEMM_UP/bin/03
+
+=== GPU Device Information ===
+Device name: NVIDIA GeForce RTX 4090
+Compute capability: 8.9
+Total global memory: 24091 MB
+Multiprocessor count: 128
+Max threads per block: 1024
+
+Matrix 512x512 - Grid: 4x4, Block: 16x16
+Sampled max abs error: 6.48024e-05
+Avg time: 6.48512e-05 s, Performance: 3854.98 GiFLOPS
+
+Matrix 1024x1024 - Grid: 8x8, Block: 16x16
+Sampled max abs error: 0.0001934
+Avg time: 0.000126019 s, Performance: 15870.6 GiFLOPS
+
+Matrix 2048x2048 - Grid: 16x16, Block: 16x16
+Sampled max abs error: 0.000835282
+Avg time: 0.000429402 s, Performance: 37261.2 GiFLOPS
+
+Matrix 4096x4096 - Grid: 32x32, Block: 16x16
+Sampled max abs error: 0.00238856
+Avg time: 0.00332798 s, Performance: 38461.8 GiFLOPS
+
+
+=== 脚本执行完成 ===
+```
+
+## sgemm v1
 ```
 root@autodl-container-3f7446bd49-385cc1ca:~/LLM_d2l/GEMM_UP# ./utils/sgemm_v1.sh 
 === GEMM共享内存版本编译和运行脚本 ===

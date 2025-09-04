@@ -52,7 +52,7 @@ __global__ void sgemm_float4(
         FLOAT4(s_a[load_a_smem_m][load_a_smem_k]) = FLOAT4(a[load_a_gmem_addr]);
 
         int load_b_gmem_k = bk * BK + load_b_smem_k;   // B 的全局行
-        int load_b_gmem_addr = OFFSET(load_b_gmem_k, load_b_smem_n, N);
+        int load_b_gmem_addr = OFFSET(load_b_gmem_k, load_b_gmem_n, N);
         FLOAT4(s_b[load_b_smem_k][load_b_smem_n]) = FLOAT4(b[load_b_gmem_addr]);
 
         __syncthreads();
