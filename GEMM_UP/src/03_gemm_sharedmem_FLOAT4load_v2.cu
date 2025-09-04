@@ -15,6 +15,9 @@
 #define TN 8
 
 #define OFFSET(row, col, ld) ((row) * (ld) + (col))
+// float4：CUDA 内置的 4 元 float 向量类型，天然 16 字节对齐，成员为 .x/.y/.z/.w。
+// 这里使用 reinterpret_cast 来将 float* 转换为 float4*，然后取第一个元素。
+// 宏 FLOAT4(ptr)：把某个地址当成 float4* 解引用（即 16 字节视图）。
 #define FLOAT4(pointer) (reinterpret_cast<float4*>(&(pointer))[0])
 
 // 基于 sgemm_v1 的正确实现，使用 shared memory 和 float4 加载
@@ -58,6 +61,8 @@ __global__ void sgemm_float4(
         __syncthreads();
 
         // 计算寄存器 tile
+        // 寄存器小块需要做完小迭代（BK）才能得到正确答案
+        // https://pica.zhimg.com/v2-ea04352396f2af8d6e09fa4e07245aae_1440w.jpg
         #pragma unroll
         for (int k = 0; k < BK; k++) {
             #pragma unroll
@@ -74,12 +79,13 @@ __global__ void sgemm_float4(
         __syncthreads();
     }
 
-    // 写回 C，使用 float4 打包
+    // 得到完整正确答案rc之后写回 C，使用 float4 打包
+    // bybx blockIdx
     #pragma unroll
     for (int i = 0; i < TM; i++) {
         int store_c_gmem_m = by * BM + ty * TM + i;
         #pragma unroll
-        for (int j = 0; j < TN; j += 4) {
+        for (int j = 0; j < TN; j += 4) {       // 注意FLOAT4写，步长为4
             int store_c_gmem_n = bx * BN + tx * TN + j;
             int store_c_gmem_addr = OFFSET(store_c_gmem_m, store_c_gmem_n, N);
             FLOAT4(c[store_c_gmem_addr]) = FLOAT4(r_c[i][j]);
