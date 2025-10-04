@@ -1,33 +1,27 @@
-动手学LLaMA FA Quant GEMM ……
 # Todo List
 Todo顺序：Llama Transformer -> FlashAttention -> llama.cpp -> 量化 
 
-把优化的gemm和pytorch实现对比一下性能？以及融合进框架里，看看能加速多少？
+把优化的gemm和pytorch实现对比一下性能？以及融合进框架里，跑端到端实验对比naive pytorch baseline
 
-- [ ] llama系列
-  - [ ] Transformer
+- [x] Llama
+  - [x] Transformer
     - [x] MHA
     - [x] RoPE
       - [x] 1. llama方式实现
       - [x] 2. 线性组合方式实现
       - [x] 1 vs 2 ：1比2快3.8倍左右（1023，2048，4096）平均测速。原因可能在于1通过复数乘法规避掉了2的transpose，stack，reshape这些中间过程，同时也避免了中间tensor的创建。
-    - [ ] KVcache
+    - [x] KVcache
     - [x] RMSNorm
     - [x] GQA
+      - [ ] 支持 cudagraph 功能：https://github.com/fw-ai/llama-cuda-graph-example/commit/d8003f59af8893837ec9834c705cfd0035d3ad37
     - [x] LayerNorm
     - [x] BatchNorm
-  - [ ] llama.cpp 【另外一个仓库】
-  - [ ] llama3.1 【不了解】
+
 
 - [ ] FlashAttention
   - [ ] python
   - [ ] cpp
   - [ ] cuda！！
-
-- [ ] 量化
-  - [ ] AutoAWQ
-  - [ ] LLM.int8
-  - [ ] GPTQ
 
 - [ ] GEMM
   - [x] Cpp
@@ -38,11 +32,18 @@ Todo顺序：Llama Transformer -> FlashAttention -> llama.cpp -> 量化
     - [ ] 对比量化前后，时间分析
   - [ ] Triton
 
-# 文件说明
+- [ ] Quant
+  - [ ] AutoAWQ
+  - [ ] LLM.int8
+  - [ ] GPTQ
 
-1. RoPE1.py：最简单的版本（基于llama）+维度变换注释
 
-2. RoPE_llama.py：llama源码
 
-3. RoPE_extra.py：研究外推性【训练max_seq_len=512，推理时候实际序列长度大于该值，模型精度？相关性？不变？不太懂】
+# 参考：
+
+https://github.com/meta-pytorch/gpt-fast
+
+https://github.com/zjhellofss/KuiperInfer
+
+https://github.com/ifromeast/cuda_learning/blob/main/03_gemm/sgemm_v3.cu
 
